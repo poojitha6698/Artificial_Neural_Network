@@ -6,8 +6,8 @@ import tensorflow as tf
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 model = tf.keras.models.load_model(
-    os.path.join(BASE_DIR, "artifacts", "model.keras"),
-    compile = False
+    os.path.join(BASE_DIR, "artifacts", "model.h5"),
+    compile=False
 )
 
 scaler = joblib.load(
