@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+artifacts/model.pth
+artifacts/scaler.pkl
+artifacts/label_encoder.pkl
+
+.env

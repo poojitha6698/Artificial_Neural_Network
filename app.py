@@ -1,458 +1,1225 @@
-# import streamlit as st
-# import pandas as pd
-# import numpy as np
-# import pickle
-# import os
-# import tensorflow as tf
-# import plotly.graph_objects as go
-# import plotly.express as px
+"""
+Customer Churn Prediction Dashboard
+PyTorch + Streamlit
+"""
 
-# # 1. Page Configuration & Custom CSS Styling
-# st.set_page_config(
-#     page_title="Customer Churn Intelligence",
-#     page_icon="🔮",
-#     layout="wide"
-# )
-
-# # Custom CSS for modern card styling and layout
-# st.markdown("""
-#     <style>
-#     .reportview-container {
-#         background: #f5f7f9;
-#     }
-#     .card {
-#         background-color: #ffffff;
-#         padding: 20px;
-#         border-radius: 12px;
-#         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-#         margin-bottom: 20px;
-#         border: 1px solid #eef2f6;
-#     }
-#     .metric-title {
-#         font-size: 14px;
-#         color: #64748b;
-#         font-weight: 600;
-#         text-transform: uppercase;
-#         letter-spacing: 0.5px;
-#     }
-#     .metric-value {
-#         font-size: 28px;
-#         font-weight: 700;
-#         color: #1e293b;
-#         margin-top: 5px;
-#     }
-#     .risk-low {
-#         border-left: 5px solid #10b981;
-#     }
-#     .risk-medium {
-#         border-left: 5px solid #f59e0b;
-#     }
-#     .risk-high {
-#         border-left: 5px solid #ef4444;
-#     }
-#     </style>
-# """, unsafe_allow_html=True)
-
-# # 2. Asset Loader
-# @st.cache_resource
-# def load_assets():
-#     preprocessor_path = os.path.join('models', 'preprocessor.pkl')
-#     model_path = os.path.join('models', 'ann_model.keras')
-    
-#     if not (os.path.exists(preprocessor_path) and os.path.exists(model_path)):
-#         return None, None
-        
-#     with open(preprocessor_path, 'rb') as f:
-#         preprocessor = pickle.load(f)
-#     model = tf.keras.models.load_model(model_path)
-#     return preprocessor, model
-
-# # Load database sample for background context plot
-# @st.cache_data
-# def load_sample_data():
-#     data_path = os.path.join('data', 'Churn_Modelling.csv')
-#     if os.path.exists(data_path):
-#         return pd.read_csv(data_path).sample(500, random_state=42)
-#     return None
-
-# preprocessor, model = load_assets()
-# sample_df = load_sample_data()
-
-# # 3. Sidebar Information panel
-# with st.sidebar:
-#     st.image("https://cdn-icons-png.flaticon.com/512/3121/3121768.png", width=80)
-#     st.title("Model Information")
-#     st.markdown("""
-#     This analyzer utilizes an **Artificial Neural Network (ANN)** trained to identify patterns correlated with customer departures.
-    
-#     ### Key Churn Factors:
-#     * **Age Group**: Older demographics show higher churn rates in this segment.
-#     * **Number of Products**: Customers with 3 or more products exhibit higher exit rates.
-#     * **Active Status**: Active members are significantly more loyal.
-#     """)
-#     st.divider()
-#     st.caption("v2.0.0 • Deep Learning Engine Enabled")
-
-# # 4. Main Application Interface
-# st.title("🔮 Customer Churn Analytics Portal")
-# st.markdown("Optimize customer retention by calculating real-time risk assessments using advanced deep learning.")
-
-# if preprocessor is None or model is None:
-#     st.error("⚠️ Model files not detected. Please verify that `model_training.py` has been executed successfully and artifacts are located in the `models/` directory.")
-# else:
-#     # Organize screen into Input Column and Visual Outputs Column
-#     col1, col2 = st.columns([1.1, 1], gap="large")
-    
-#     with col1:
-#         st.subheader("📋 Customer Demographics & Profile")
-        
-#         # Grid layout for inputs to save screen space
-#         g1, g2 = st.columns(2)
-#         with g1:
-#             geography = st.selectbox("Geographic Region", options=["France", "Germany", "Spain"], help="Country of customer registration.")
-#             gender = st.radio("Gender Profile", options=["Male", "Female"], horizontal=True)
-#             age = st.slider("Age (Years)", min_value=18, max_value=90, value=38, step=1)
-#             tenure = st.slider("Account Tenure (Years)", min_value=0, max_value=10, value=5, step=1)
-#             credit_score = st.slider("Credit Score Rating", min_value=300, max_value=850, value=650, step=5)
-
-#         with g2:
-#             balance = st.number_input("Current Account Balance ($)", min_value=0.0, value=75000.0, step=5000.0, format="%.2f")
-#             estimated_salary = st.number_input("Estimated Annual Salary ($)", min_value=0.0, value=90000.0, step=5000.0, format="%.2f")
-#             num_products = st.selectbox("Number of Active Products", options=[1, 2, 3, 4], index=1)
-#             has_cr_card = st.checkbox("Holds active Credit Card", value=True)
-#             is_active = st.checkbox("Is actively engaged Member", value=True)
-
-#     # Prepare user input data
-#     input_data = pd.DataFrame([{
-#         'CreditScore': credit_score,
-#         'Geography': geography,
-#         'Gender': gender,
-#         'Age': age,
-#         'Tenure': tenure,
-#         'Balance': balance,
-#         'NumOfProducts': num_products,
-#         'HasCrCard': 1 if has_cr_card else 0,
-#         'IsActiveMember': 1 if is_active else 0,
-#         'EstimatedSalary': estimated_salary
-#     }])
-
-#     # Preprocess and execute predictions reactive to any parameter change
-#     processed_input = preprocessor.transform(input_data)
-#     churn_probability = float(model.predict(processed_input, verbose=0)[0][0])
-#     churn_percentage = churn_probability * 100
-
-#     # Classify Risk Levels
-#     if churn_probability < 0.25:
-#         risk_class = "risk-low"
-#         risk_status = "Low Risk Profile"
-#         risk_color = "#10b981"
-#         recommendation = "Customer demonstrates stable retention metrics. Maintain standard engagement strategies."
-#     elif churn_probability < 0.55:
-#         risk_class = "risk-medium"
-#         risk_status = "Moderate Risk Profile"
-#         risk_color = "#f59e0b"
-#         recommendation = "Elevated risk signals detected. Target with loyalty promotions or review product usage satisfaction."
-#     else:
-#         risk_class = "risk-high"
-#         risk_status = "High Risk Profile"
-#         risk_color = "#ef4444"
-#         recommendation = "Critical churn indicators present. Immediate outreach by dedicated customer success team advised."
-
-#     with col2:
-#         st.subheader("🔍 Prediction Insights & Evaluation")
-        
-#         # Display Styled Results Card
-#         st.markdown(f"""
-#             <div class="card {risk_class}">
-#                 <div class="metric-title">Risk Assessment Evaluation</div>
-#                 <div class="metric-value" style="color: {risk_color};">{risk_status}</div>
-#                 <p style="margin-top: 10px; color: #475569; font-size: 14px;">{recommendation}</p>
-#             </div>
-#         """, unsafe_allow_html=True)
-        
-#         # 5. Interactive Gauge Plot (Plotly)
-#         fig_gauge = go.Figure(go.Indicator(
-#             mode="gauge+number",
-#             value=round(churn_percentage, 1),
-#             domain={'x': [0, 1], 'y': [0, 1]},
-#             number={'suffix': "%", 'font': {'size': 44, 'color': '#1e293b'}},
-#             gauge={
-#                 'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#94a3b8"},
-#                 'bar': {'color': risk_color},
-#                 'bgcolor': "#f1f5f9",
-#                 'borderwidth': 1,
-#                 'bordercolor': "#cbd5e1",
-#                 'steps': [
-#                     {'range': [0, 25], 'color': '#e6f4ea'},
-#                     {'range': [25, 55], 'color': '#fef3c7'},
-#                     {'range': [55, 100], 'color': '#fee2e2'}
-#                 ],
-#             }
-#         ))
-        
-#         fig_gauge.update_layout(
-#             height=260, 
-#             margin=dict(l=20, r=20, t=40, b=20),
-#             paper_bgcolor='rgba(0,0,0,0)',
-#             plot_bgcolor='rgba(0,0,0,0)'
-#         )
-#         st.plotly_chart(fig_gauge, use_container_width=True)
-
-#         # 6. Interactive Comparative Analysis Plot (Plotly Scatter)
-#         if sample_df is not None:
-#             st.markdown("### Profile Comparison")
-#             st.caption("This visualization maps the currently evaluated profile against a sample cohort of existing customers.")
-            
-#             # Map values for better readability in plot
-#             plot_sample = sample_df.copy()
-#             plot_sample['Churn Status'] = plot_sample['Exited'].map({0: 'Retained', 1: 'Churned'})
-            
-#             # Create a reference row for the current customer
-#             current_cust = pd.DataFrame([{
-#                 'Age': age,
-#                 'Balance': balance,
-#                 'Churn Status': 'Current Customer'
-#             }])
-            
-#             combined_plot_data = pd.concat([plot_sample, current_cust], ignore_index=True)
-            
-#             fig_compare = px.scatter(
-#                 combined_plot_data, 
-#                 x="Age", 
-#                 y="Balance", 
-#                 color="Churn Status",
-#                 color_discrete_map={'Retained': '#94a3b8', 'Churned': '#f87171', 'Current Customer': risk_color},
-#                 size=combined_plot_data['Churn Status'].apply(lambda x: 18 if x == 'Current Customer' else 6),
-#                 labels={"Balance": "Account Balance ($)", "Age": "Age (Years)"},
-#                 opacity=combined_plot_data['Churn Status'].apply(lambda x: 1.0 if x == 'Current Customer' else 0.4)
-#             )
-            
-#             fig_compare.update_layout(
-#                 height=250,
-#                 margin=dict(l=10, r=10, t=10, b=10),
-#                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-#                 paper_bgcolor='rgba(0,0,0,0)',
-#                 plot_bgcolor='rgba(0,0,0,0)'
-#             )
-            
-#             st.plotly_chart(fig_compare, use_container_width=True)
-
-import streamlit as st
-import pandas as pd
-import numpy as np
-import pickle
 import os
-import tensorflow as tf
-import plotly.graph_objects as go
+import json
+import numpy as np
+import pandas as pd
+import streamlit as st
 import plotly.express as px
+import plotly.graph_objects as go
 
-# 1. Page Configuration & Custom CSS Styling
+from predict import predict
+
+
+# =====================================================
+# PAGE CONFIG
+# =====================================================
+
 st.set_page_config(
-    page_title="Customer Churn Intelligence",
-    page_icon="🔮",
-    layout="wide"
+    page_title="Customer Churn Prediction",
+    page_icon="🏦",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-st.markdown("""
+# =====================================================
+# PATHS
+# =====================================================
+
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
+
+DATA_PATH = os.path.join(
+    BASE_DIR,
+    "data",
+    "churn.csv"
+)
+
+ARTIFACT_DIR = os.path.join(
+    BASE_DIR,
+    "artifacts"
+)
+
+MODEL_PATH = os.path.join(
+    ARTIFACT_DIR,
+    "model.pth"
+)
+
+SCALER_PATH = os.path.join(
+    ARTIFACT_DIR,
+    "scaler.pkl"
+)
+
+ENCODER_PATH = os.path.join(
+    ARTIFACT_DIR,
+    "label_encoder.pkl"
+)
+
+FEATURE_COLUMNS_PATH = os.path.join(
+    ARTIFACT_DIR,
+    "feature_columns.pkl"
+)
+
+METRICS_PATH = os.path.join(
+    ARTIFACT_DIR,
+    "metrics.json"
+)
+
+CM_PATH = os.path.join(
+    ARTIFACT_DIR,
+    "confusion_matrix.npy"
+)
+
+ROC_PATH = os.path.join(
+    ARTIFACT_DIR,
+    "roc_data.npz"
+)
+
+
+# =====================================================
+# CUSTOM CSS
+# =====================================================
+
+st.markdown(
+    """
     <style>
-    .card {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
-        border: 1px solid #eef2f6;
+
+    .stApp {
+        background: linear-gradient(
+            135deg,
+            #0f172a,
+            #1e293b,
+            #334155
+        );
     }
-    .metric-title {
-        font-size: 14px;
-        color: #64748b;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+
+    .main-title{
+        font-size:45px;
+        font-weight:700;
+        color:white;
+        text-align:center;
+        margin-bottom:20px;
     }
-    .metric-value {
-        font-size: 28px;
-        font-weight: 700;
-        color: #1e293b;
-        margin-top: 5px;
+
+    .sub-title{
+        color:#CBD5E1;
+        text-align:center;
+        font-size:18px;
+        margin-bottom:30px;
     }
-    .risk-low { border-left: 5px solid #10b981; }
-    .risk-medium { border-left: 5px solid #f59e0b; }
-    .risk-high { border-left: 5px solid #ef4444; }
+
+    .metric-card{
+        background:white;
+        padding:20px;
+        border-radius:15px;
+        box-shadow:0px 5px 20px rgba(0,0,0,0.25);
+        text-align:center;
+    }
+
+    .section-title{
+        color:white;
+        font-size:24px;
+        font-weight:bold;
+        margin-top:20px;
+        margin-bottom:10px;
+    }
+
+    .info-box{
+        background:white;
+        padding:20px;
+        border-radius:15px;
+        box-shadow:0px 5px 20px rgba(0,0,0,0.25);
+    }
+
     </style>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True
+)
 
-# 2. Asset Loader
-@st.cache_resource
-def load_assets():
-    meta_path = os.path.join('models', 'preprocessor_meta.pkl')
-    model_path = os.path.join('models', 'ann_model.keras')
-    
-    if not (os.path.exists(meta_path) and os.path.exists(model_path)):
-        return None, None
-        
-    with open(meta_path, 'rb') as f:
-        meta = pickle.load(f)
-    model = tf.keras.models.load_model(model_path)
-    return meta, model
 
-# Transform function directly embedded to ensure seamless application execution
-def preprocess_input(df, meta):
-    scaled_df = df.copy()
-    for col in meta['num_cols']:
-        mean = meta['means'][col]
-        std = meta['stds'][col]
-        scaled_df[col] = (scaled_df[col] - mean) / (std if std > 0 else 1e-9)
-        
-    geographies = ['France', 'Germany', 'Spain']
-    for geo in geographies:
-        scaled_df[f'Geography_{geo}'] = (scaled_df['Geography'] == geo).astype(float)
-        
-    genders = ['Female', 'Male']
-    for gen in genders:
-        scaled_df[f'Gender_{gen}'] = (scaled_df['Gender'] == gen).astype(float)
-        
-    ordered_cols = meta['num_cols'] + \
-                   [f'Geography_{g}' for g in geographies] + \
-                   [f'Gender_{g}' for g in genders]
-                   
-    return scaled_df[ordered_cols].values
+# =====================================================
+# HELPER FUNCTIONS
+# =====================================================
 
 @st.cache_data
-def load_sample_data():
-    data_path = os.path.join('data', 'Churn_Modelling.csv')
-    if os.path.exists(data_path):
-        return pd.read_csv(data_path).sample(500, random_state=42)
-    return None
+def load_dataset():
 
-meta, model = load_assets()
-sample_df = load_sample_data()
+    if not os.path.exists(DATA_PATH):
+        return None
 
-# 3. Sidebar panel
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3121/3121768.png", width=80)
-    st.title("Model Information")
-    st.markdown("""
-    This analyzer utilizes an **Artificial Neural Network (ANN)** trained to identify patterns correlated with customer departures.
-    """)
-    st.divider()
-    st.caption("v2.1.0 • Stable Meta-Preprocessing Enabled")
+    return pd.read_csv(DATA_PATH)
 
-# 4. Main Panel
-st.title("🔮 Customer Churn Analytics Portal")
-st.markdown("Optimize customer retention by calculating real-time risk assessments using advanced deep learning.")
 
-if meta is None or model is None:
-    st.error("⚠️ Model files not detected. Please verify that `model_training.py` has been executed locally.")
-else:
-    col1, col2 = st.columns([1.1, 1], gap="large")
-    
+@st.cache_data
+def load_metrics():
+
+    if not os.path.exists(METRICS_PATH):
+        return {}
+
+    with open(
+        METRICS_PATH,
+        "r"
+    ) as file:
+
+        return json.load(file)
+
+
+def artifacts_available():
+
+    required_files = [
+        MODEL_PATH,
+        SCALER_PATH,
+        ENCODER_PATH,
+        FEATURE_COLUMNS_PATH
+    ]
+
+    return all(
+        os.path.exists(file)
+        for file in required_files
+    )
+
+
+# =====================================================
+# LOAD DATA
+# =====================================================
+
+df = load_dataset()
+
+metrics = load_metrics()
+
+
+# =====================================================
+# SIDEBAR
+# =====================================================
+
+st.sidebar.title("🏦 Navigation")
+
+page = st.sidebar.radio(
+    "Select Page",
+    [
+        "Dashboard",
+        "Prediction",
+        "About"
+    ]
+)
+
+st.sidebar.markdown("---")
+
+st.sidebar.info(
+    """
+    ANN Customer Churn Prediction
+
+    Built with:
+    - PyTorch
+    - Streamlit
+    - Plotly
+    """
+)
+
+
+# =====================================================
+# DASHBOARD PAGE
+# =====================================================
+
+if page == "Dashboard":
+
+    st.markdown(
+        """
+        <div class="main-title">
+        🏦 Customer Churn Dashboard
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <div class="sub-title">
+        End-to-End Customer Churn Prediction using PyTorch
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if df is None:
+
+        st.error(
+            "Dataset not found in data/churn.csv"
+        )
+
+        st.stop()
+
+    # ==========================================
+    # KPI CARDS
+    # ==========================================
+
+    total_customers = len(df)
+
+    churn_customers = int(
+        df["Exited"].sum()
+    )
+
+    retention_rate = round(
+        (1 - df["Exited"].mean()) * 100,
+        2
+    )
+
+    feature_count = (
+        df.shape[1]
+    )
+
+    col1, col2, col3, col4 = st.columns(4)
+
     with col1:
-        st.subheader("📋 Customer Demographics & Profile")
-        g1, g2 = st.columns(2)
-        with g1:
-            geography = st.selectbox("Geographic Region", options=["France", "Germany", "Spain"])
-            gender = st.radio("Gender Profile", options=["Male", "Female"], horizontal=True)
-            age = st.slider("Age (Years)", min_value=18, max_value=90, value=38, step=1)
-            tenure = st.slider("Account Tenure (Years)", min_value=0, max_value=10, value=5, step=1)
-            credit_score = st.slider("Credit Score Rating", min_value=300, max_value=850, value=650, step=5)
-        with g2:
-            balance = st.number_input("Current Account Balance ($)", min_value=0.0, value=75000.0, step=5000.0, format="%.2f")
-            estimated_salary = st.number_input("Estimated Annual Salary ($)", min_value=0.0, value=90000.0, step=5000.0, format="%.2f")
-            num_products = st.selectbox("Number of Active Products", options=[1, 2, 3, 4], index=1)
-            has_cr_card = st.checkbox("Holds active Credit Card", value=True)
-            is_active = st.checkbox("Is actively engaged Member", value=True)
 
-    # DataFrame creation matches expected pipeline features
-    input_data = pd.DataFrame([{
-        'CreditScore': credit_score,
-        'Geography': geography,
-        'Gender': gender,
-        'Age': age,
-        'Tenure': tenure,
-        'Balance': balance,
-        'NumOfProducts': num_products,
-        'HasCrCard': 1 if has_cr_card else 0,
-        'IsActiveMember': 1 if is_active else 0,
-        'EstimatedSalary': estimated_salary
-    }])
-
-    # Preprocess safely using dictionary values
-    processed_input = preprocess_input(input_data, meta)
-    churn_probability = float(model.predict(processed_input, verbose=0)[0][0])
-    churn_percentage = churn_probability * 100
-
-    if churn_probability < 0.25:
-        risk_class, risk_status, risk_color = "risk-low", "Low Risk Profile", "#10b981"
-        recommendation = "Customer demonstrates stable retention metrics."
-    elif churn_probability < 0.55:
-        risk_class, risk_status, risk_color = "risk-medium", "Moderate Risk Profile", "#f59e0b"
-        recommendation = "Elevated risk signals detected. Review satifaction."
-    else:
-        risk_class, risk_status, risk_color = "risk-high", "High Risk Profile", "#ef4444"
-        recommendation = "Critical churn indicators present. Advise success team."
+        st.metric(
+            "Total Customers",
+            f"{total_customers:,}"
+        )
 
     with col2:
-        st.subheader("🔍 Prediction Insights & Evaluation")
-        
-        st.markdown(f"""
-            <div class="card {risk_class}">
-                <div class="metric-title">Risk Assessment Evaluation</div>
-                <div class="metric-value" style="color: {risk_color};">{risk_status}</div>
-                <p style="margin-top: 10px; color: #475569; font-size: 14px;">{recommendation}</p>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # Interactive Gauge Plot
-        fig_gauge = go.Figure(go.Indicator(
-            mode="gauge+number",
-            value=round(churn_percentage, 1),
-            domain={'x': [0, 1], 'y': [0, 1]},
-            number={'suffix': "%", 'font': {'size': 44, 'color': '#1e293b'}},
-            gauge={
-                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "#94a3b8"},
-                'bar': {'color': risk_color},
-                'bgcolor': "#f1f5f9",
-                'borderwidth': 1,
-                'bordercolor': "#cbd5e1",
-                'steps': [
-                    {'range': [0, 25], 'color': '#e6f4ea'},
-                    {'range': [25, 55], 'color': '#fef3c7'},
-                    {'range': [55, 100], 'color': '#fee2e2'}
-                ],
-            }
-        ))
-        
-        fig_gauge.update_layout(
-            height=260, margin=dict(l=20, r=20, t=40, b=20),
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
-        )
-        st.plotly_chart(fig_gauge, use_container_width=True)
 
-        if sample_df is not None:
-            st.markdown("### Profile Comparison")
-            plot_sample = sample_df.copy()
-            plot_sample['Churn Status'] = plot_sample['Exited'].map({0: 'Retained', 1: 'Churned'})
-            
-            current_cust = pd.DataFrame([{
-                'Age': age,
-                'Balance': balance,
-                'Churn Status': 'Current Customer'
-            }])
-            
-            combined_plot_data = pd.concat([plot_sample, current_cust], ignore_index=True)
-            
-            fig_compare = px.scatter(
-                combined_plot_data, x="Age", y="Balance", color="Churn Status",
-                color_discrete_map={'Retained': '#94a3b8', 'Churned': '#f87171', 'Current Customer': risk_color},
-                size=combined_plot_data['Churn Status'].apply(lambda x: 18 if x == 'Current Customer' else 6),
-                labels={"Balance": "Account Balance ($)", "Age": "Age (Years)"},
-                opacity=combined_plot_data['Churn Status'].apply(lambda x: 1.0 if x == 'Current Customer' else 0.4)
+        st.metric(
+            "Churn Customers",
+            f"{churn_customers:,}"
+        )
+
+    with col3:
+
+        st.metric(
+            "Retention Rate",
+            f"{retention_rate}%"
+        )
+
+    with col4:
+
+        st.metric(
+            "Features",
+            feature_count
+        )
+
+    st.markdown("---")
+
+    # ==========================================
+    # MODEL METRICS
+    # ==========================================
+
+    st.markdown(
+        """
+        <div class="section-title">
+        🎯 Model Performance
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if metrics:
+
+        m1, m2, m3, m4, m5 = st.columns(5)
+
+        with m1:
+            st.metric(
+                "Accuracy",
+                f"{metrics.get('accuracy',0):.4f}"
             )
-            
-            fig_compare.update_layout(
-                height=250, margin=dict(l=10, r=10, t=10, b=10),
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
+
+        with m2:
+            st.metric(
+                "Precision",
+                f"{metrics.get('precision',0):.4f}"
             )
-            st.plotly_chart(fig_compare, use_container_width=True)
+
+        with m3:
+            st.metric(
+                "Recall",
+                f"{metrics.get('recall',0):.4f}"
+            )
+
+        with m4:
+            st.metric(
+                "F1 Score",
+                f"{metrics.get('f1_score',0):.4f}"
+            )
+
+        with m5:
+            st.metric(
+                "ROC AUC",
+                f"{metrics.get('roc_auc',0):.4f}"
+            )
+
+    else:
+
+        st.warning(
+            "Metrics not found. Run train.py first."
+        )
+
+    st.markdown("---")
+
+    # ==========================================
+    # DATASET PREVIEW
+    # ==========================================
+
+    st.markdown(
+        """
+        <div class="section-title">
+        📄 Dataset Preview
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.dataframe(
+        df.head(),
+        use_container_width=True
+    )
+
+    st.markdown("---")
+
+    # PART 2 STARTS HERE
+    # ==========================================
+    # CHURN DISTRIBUTION
+    # ==========================================
+
+    st.markdown(
+        """
+        <div class="section-title">
+        📊 Customer Churn Distribution
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    try:
+
+        churn_counts = (
+            df["Exited"]
+            .value_counts()
+            .reset_index()
+        )
+
+        churn_counts.columns = [
+            "Status",
+            "Count"
+        ]
+
+        churn_counts["Status"] = (
+            churn_counts["Status"]
+            .map({
+                0: "Stayed",
+                1: "Exited"
+            })
+        )
+
+        fig = px.pie(
+            churn_counts,
+            names="Status",
+            values="Count",
+            hole=0.55,
+            title="Customer Churn Distribution"
+        )
+
+        fig.update_traces(
+            textposition="inside",
+            textinfo="percent+label"
+        )
+
+        fig.update_layout(
+            height=500
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    except Exception as e:
+
+        st.error(
+            f"Error loading churn chart: {e}"
+        )
+
+    st.markdown("---")
+
+    # ==========================================
+    # CORRELATION HEATMAP
+    # ==========================================
+
+    st.markdown(
+        """
+        <div class="section-title">
+        🔥 Correlation Heatmap
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    try:
+
+        numeric_df = df.select_dtypes(
+            include=["number"]
+        )
+
+        corr = numeric_df.corr()
+
+        heatmap = go.Figure(
+            data=go.Heatmap(
+                z=corr.values,
+                x=corr.columns,
+                y=corr.columns,
+                colorscale="RdBu",
+                zmin=-1,
+                zmax=1
+            )
+        )
+
+        heatmap.update_layout(
+            height=700
+        )
+
+        st.plotly_chart(
+            heatmap,
+            use_container_width=True
+        )
+
+    except Exception as e:
+
+        st.error(
+            f"Heatmap Error: {e}"
+        )
+
+    st.markdown("---")
+
+    # ==========================================
+    # FEATURE IMPORTANCE
+    # ==========================================
+
+    st.markdown(
+        """
+        <div class="section-title">
+        🎯 Top Features Affecting Churn
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    try:
+
+        feature_importance = (
+            corr["Exited"]
+            .drop("Exited")
+            .abs()
+            .sort_values(
+                ascending=False
+            )
+            .head(10)
+        )
+
+        fig = px.bar(
+            x=feature_importance.values,
+            y=feature_importance.index,
+            orientation="h",
+            title="Feature Importance (Correlation Based)"
+        )
+
+        fig.update_layout(
+            height=500
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    except Exception as e:
+
+        st.error(
+            f"Feature Importance Error: {e}"
+        )
+
+    st.markdown("---")
+
+    # ==========================================
+    # GEOGRAPHY ANALYSIS
+    # ==========================================
+
+    if "Geography" in df.columns:
+
+        st.markdown(
+            """
+            <div class="section-title">
+            🌍 Churn Rate by Geography
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        try:
+
+            geo = (
+                df.groupby("Geography")
+                ["Exited"]
+                .mean()
+                .reset_index()
+            )
+
+            geo["Exited"] = (
+                geo["Exited"] * 100
+            )
+
+            fig = px.bar(
+                geo,
+                x="Geography",
+                y="Exited",
+                text="Exited",
+                title="Churn Percentage by Country"
+            )
+
+            fig.update_traces(
+                texttemplate="%{text:.2f}%"
+            )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True
+            )
+
+        except Exception as e:
+
+            st.error(
+                f"Geography Error: {e}"
+            )
+
+    st.markdown("---")
+
+    # ==========================================
+    # GENDER ANALYSIS
+    # ==========================================
+
+    if "Gender" in df.columns:
+
+        st.markdown(
+            """
+            <div class="section-title">
+            👨‍💼👩‍💼 Churn by Gender
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        try:
+
+            gender_df = (
+                df.groupby("Gender")
+                ["Exited"]
+                .mean()
+                .reset_index()
+            )
+
+            gender_df["Exited"] = (
+                gender_df["Exited"] * 100
+            )
+
+            fig = px.bar(
+                gender_df,
+                x="Gender",
+                y="Exited",
+                text="Exited"
+            )
+
+            fig.update_traces(
+                texttemplate="%{text:.2f}%"
+            )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True
+            )
+
+        except Exception as e:
+
+            st.error(
+                f"Gender Analysis Error: {e}"
+            )
+
+    st.markdown("---")
+
+    # ==========================================
+    # AGE DISTRIBUTION
+    # ==========================================
+
+    if "Age" in df.columns:
+
+        st.markdown(
+            """
+            <div class="section-title">
+            🎂 Age Distribution
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        fig = px.histogram(
+            df,
+            x="Age",
+            nbins=30,
+            title="Customer Age Distribution"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    st.markdown("---")
+
+    # ==========================================
+    # BALANCE DISTRIBUTION
+    # ==========================================
+
+    if "Balance" in df.columns:
+
+        st.markdown(
+            """
+            <div class="section-title">
+            💰 Balance Distribution
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        fig = px.histogram(
+            df,
+            x="Balance",
+            nbins=30,
+            title="Account Balance Distribution"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    st.markdown("---")
+
+    # ==========================================
+    # ROC CURVE
+    # ==========================================
+
+    st.markdown(
+        """
+        <div class="section-title">
+        📈 ROC Curve
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    try:
+
+        if os.path.exists(ROC_PATH):
+
+            roc_data = np.load(
+                ROC_PATH
+            )
+
+            fpr = roc_data["fpr"]
+            tpr = roc_data["tpr"]
+
+            roc_fig = go.Figure()
+
+            roc_fig.add_trace(
+                go.Scatter(
+                    x=fpr,
+                    y=tpr,
+                    mode="lines",
+                    name="ROC Curve"
+                )
+            )
+
+            roc_fig.add_trace(
+                go.Scatter(
+                    x=[0, 1],
+                    y=[0, 1],
+                    mode="lines",
+                    name="Random"
+                )
+            )
+
+            roc_fig.update_layout(
+                xaxis_title="False Positive Rate",
+                yaxis_title="True Positive Rate",
+                height=500
+            )
+
+            st.plotly_chart(
+                roc_fig,
+                use_container_width=True
+            )
+
+        else:
+
+            st.warning(
+                "ROC data not found. Run train.py first."
+            )
+
+    except Exception as e:
+
+        st.error(
+            f"ROC Curve Error: {e}"
+        )
+
+    st.markdown("---")
+
+    # ==========================================
+    # CONFUSION MATRIX
+    # ==========================================
+
+    st.markdown(
+        """
+        <div class="section-title">
+        🎯 Confusion Matrix
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    try:
+
+        if os.path.exists(CM_PATH):
+
+            cm = np.load(
+                CM_PATH
+            )
+
+            cm_fig = go.Figure(
+                data=go.Heatmap(
+                    z=cm,
+                    x=[
+                        "Predicted No",
+                        "Predicted Yes"
+                    ],
+                    y=[
+                        "Actual No",
+                        "Actual Yes"
+                    ]
+                )
+            )
+
+            cm_fig.update_layout(
+                height=500
+            )
+
+            st.plotly_chart(
+                cm_fig,
+                use_container_width=True
+            )
+
+        else:
+
+            st.warning(
+                "Confusion Matrix not found."
+            )
+
+    except Exception as e:
+
+        st.error(
+            f"Confusion Matrix Error: {e}"
+        )
+
+    # PART 3 STARTS HERE
+
+# =====================================================
+# PREDICTION PAGE
+# =====================================================
+
+elif page == "Prediction":
+
+    st.markdown(
+        """
+        <div class="main-title">
+        🔮 Customer Churn Prediction
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <div class="sub-title">
+        Enter customer details and predict churn probability
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if not artifacts_available():
+
+        st.error(
+            """
+            Required artifacts not found.
+
+            Please run:
+
+            python train.py
+
+            before using predictions.
+            """
+        )
+
+        st.stop()
+
+    with st.form("prediction_form"):
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            credit_score = st.number_input(
+                "Credit Score",
+                min_value=300,
+                max_value=900,
+                value=650
+            )
+
+            geography = st.selectbox(
+                "Geography",
+                [
+                    "France",
+                    "Germany",
+                    "Spain"
+                ]
+            )
+
+            gender = st.selectbox(
+                "Gender",
+                [
+                    "Male",
+                    "Female"
+                ]
+            )
+
+            age = st.number_input(
+                "Age",
+                min_value=18,
+                max_value=100,
+                value=35
+            )
+
+            tenure = st.number_input(
+                "Tenure",
+                min_value=0,
+                max_value=10,
+                value=5
+            )
+
+        with col2:
+
+            balance = st.number_input(
+                "Balance",
+                min_value=0.0,
+                value=50000.0
+            )
+
+            products = st.number_input(
+                "Number Of Products",
+                min_value=1,
+                max_value=4,
+                value=2
+            )
+
+            card = st.selectbox(
+                "Has Credit Card",
+                [0, 1]
+            )
+
+            active_member = st.selectbox(
+                "Is Active Member",
+                [0, 1]
+            )
+
+            salary = st.number_input(
+                "Estimated Salary",
+                min_value=0.0,
+                value=60000.0
+            )
+
+        submitted = st.form_submit_button(
+            "Predict Customer Churn"
+        )
+
+    if submitted:
+
+        try:
+
+            sample = pd.DataFrame({
+
+                "CreditScore": [credit_score],
+
+                "Geography": [geography],
+
+                "Gender": [gender],
+
+                "Age": [age],
+
+                "Tenure": [tenure],
+
+                "Balance": [balance],
+
+                "NumOfProducts": [products],
+
+                "HasCrCard": [card],
+
+                "IsActiveMember": [active_member],
+
+                "EstimatedSalary": [salary]
+
+            })
+
+            probability, prediction = predict(
+                sample
+            )
+
+            st.markdown("---")
+
+            st.subheader(
+                "Prediction Result"
+            )
+
+            st.metric(
+                "Churn Probability",
+                f"{probability:.2%}"
+            )
+
+            gauge = go.Figure(
+                go.Indicator(
+                    mode="gauge+number",
+                    value=probability * 100,
+                    title={
+                        "text":
+                        "Churn Risk (%)"
+                    },
+                    gauge={
+                        "axis": {
+                            "range":
+                            [0, 100]
+                        }
+                    }
+                )
+            )
+
+            gauge.update_layout(
+                height=400
+            )
+
+            st.plotly_chart(
+                gauge,
+                use_container_width=True
+            )
+
+            if prediction == "Leave":
+
+                st.error(
+                    f"""
+                    High Churn Risk
+
+                    Prediction: {prediction}
+
+                    Probability:
+                    {probability:.2%}
+                    """
+                )
+
+            else:
+
+                st.success(
+                    f"""
+                    Customer Likely To Stay
+
+                    Prediction: {prediction}
+
+                    Probability:
+                    {probability:.2%}
+                    """
+                )
+
+        except Exception as e:
+
+            st.error(
+                f"Prediction Error: {e}"
+            )
+
+# =====================================================
+# ABOUT PAGE
+# =====================================================
+
+elif page == "About":
+
+    st.markdown(
+        """
+        <div class="main-title">
+        ℹ️ About Project
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <div class="info-box">
+        <h3>Project Overview</h3>
+
+        This project predicts whether a customer
+        is likely to leave the bank using a
+        PyTorch Artificial Neural Network.
+
+        The application includes:
+
+        ✔ Data Analysis
+
+        ✔ Feature Visualization
+
+        ✔ ANN Training
+
+        ✔ Churn Prediction
+
+        ✔ Interactive Dashboard
+
+        ✔ Streamlit Deployment
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("<br>",
+                unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.markdown(
+            """
+            ### 🛠 Technologies
+
+            - Python
+
+            - PyTorch
+
+            - Streamlit
+
+            - Plotly
+
+            - NumPy
+
+            - Pandas
+
+            - Scikit-Learn
+
+            - Joblib
+            """
+        )
+
+    with col2:
+
+        st.markdown(
+            """
+            ### ⚙ Workflow
+
+            1. Data Collection
+
+            2. Data Preprocessing
+
+            3. Feature Engineering
+
+            4. ANN Training
+
+            5. Evaluation
+
+            6. Prediction
+
+            7. Deployment
+            """
+        )
+
+    st.markdown("---")
+
+    st.markdown(
+        """
+        ### 🧠 ANN Architecture
+
+        Input Layer
+
+        ↓
+
+        Linear(128)
+
+        ↓
+
+        ReLU
+
+        ↓
+
+        Dropout(0.3)
+
+        ↓
+
+        Linear(64)
+
+        ↓
+
+        ReLU
+
+        ↓
+
+        Dropout(0.3)
+
+        ↓
+
+        Linear(32)
+
+        ↓
+
+        ReLU
+
+        ↓
+
+        Linear(1)
+
+        ↓
+
+        Sigmoid
+        """
+    )
+
+    st.markdown("---")
+
+    st.markdown(
+        """
+        ### 🚀 Deployment
+
+        Compatible With:
+
+        - Local Machine
+
+        - GitHub
+
+        - Streamlit Cloud
+
+        - Linux Servers
+
+        - Windows Systems
+        """
+    )
+
+    st.success(
+        """
+        ANN Customer Churn Prediction
+        Project Ready For Deployment
+        """
+    )
+
