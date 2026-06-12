@@ -1,17 +1,21 @@
+import os
 import pandas as pd
 import joblib
 import tensorflow as tf
 
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 model = tf.keras.models.load_model(
-    "artifacts/model.h5"
+    os.path.join(BASE_DIR, "artifacts", "model.keras"),
+    compile = False
 )
 
 scaler = joblib.load(
-    "artifacts/scaler.pkl"
+    os.path.join(BASE_DIR, "artifacts", "scaler.pkl")
 )
 
 feature_columns = joblib.load(
-    "artifacts/feature_columns.pkl"
+    os.path.join(BASE_DIR, "artifacts", "feature_columns.pkl")
 )
 
 def predict(input_df):

@@ -80,5 +80,5 @@ loss, acc = model.evaluate(
 print(f"Accuracy: {acc:.4f}")
 
 model.save(
-    "artifacts/model.h5"
+    "artifacts/model.keras"
 )
